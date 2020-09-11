@@ -16,4 +16,3 @@ resources:
   - ./snapshots-service
   - ./web-ui/k8s
   - ./webhooks/k8s
-
