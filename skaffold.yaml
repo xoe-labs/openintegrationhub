@@ -1,0 +1,12 @@
+apiVersion: skaffold/v2beta6
+kind: Config
+metadata:
+  name: oih
+portForward:
+test:
+deploy:
+  #statusCheckDeadlineSeconds: 200
+  kustomize:
+    paths:
+      - ./minikube
+  kubeContext: k3d-k3s-default
