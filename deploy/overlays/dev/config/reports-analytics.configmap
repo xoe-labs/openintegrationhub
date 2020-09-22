@@ -1,0 +1,5 @@
+GRAFANA_URL=https://grafana.openintegrationhub.com
+INFLUXDB_DATABASE=statistics
+INFLUX_HOST=influxdb.oih-dev-ns.svc.cluster.local
+LOG_LEVEL=error
+RABBITMQ_URI=amqp://guest:guest@rabbitmq-service.oih-dev-ns.svc.cluster.local:5672

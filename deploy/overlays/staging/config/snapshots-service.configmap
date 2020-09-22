@@ -1,0 +1,2 @@
+PORT=1234
+RABBITMQ_URI=amqp://guest:guest@rabbitmq-service.oih-staging-ns.svc.cluster.local

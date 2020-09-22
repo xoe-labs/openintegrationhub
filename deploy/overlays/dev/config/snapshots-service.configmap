@@ -1,0 +1,3 @@
+LOG_LEVEL=trace
+PORT=1234
+RABBITMQ_URI=amqp://guest:guest@rabbitmq-service.oih-dev-ns.svc.cluster.local
