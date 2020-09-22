@@ -1,0 +1,1895 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: flows
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: oih-dev-ns
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: component-orchestrator-account
+  namespace: oih-staging-ns
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: component-orchestrator-role
+  namespace: oih-staging-ns
+rules:
+- resources:
+  - deployments
+  apiGroups:
+  - apps
+  verbs:
+  - create
+  - delete
+  - deletecollection
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- resources:
+  - cronjobs
+  apiGroups:
+  - batch
+  verbs:
+  - create
+  - delete
+  - deletecollection
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- resources:
+  - configmaps
+  apiGroups:
+  - ""
+  verbs:
+  - get
+  - list
+- resources:
+  - secrets
+  apiGroups:
+  - ""
+  verbs:
+  - create
+  - delete
+  - deletecollection
+  - get
+  - list
+  - patch
+  - update
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: component-orchestrator-rolebinding
+  namespace: oih-staging-ns
+roleRef:
+  name: component-orchestrator-role
+  kind: Role
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- name: component-orchestrator-account
+  namespace: oih-staging-ns
+  kind: ServiceAccount
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-directory
+  namespace: oih-staging-ns
+data:
+  API_BASE: /api/v1
+  DEBUG_MODE: "false"
+  INTROSPECT_ENDPOINT_BASIC: http://iam.openintegrationhub.com/api/v1/tokens/introspect
+  INTROSPECT_TYPE: basic
+  LOGGING_LEVEL: error
+  ORIGIN_WHITELIST: openintegrationhub.com,http://web-ui.openintegrationhub.com,https://web-ui.openintegrationhub.com
+  PORT: "3000"
+  RABBITMQ_URI: amqp://guest:guest@rabbitmq-service.oih-dev-ns.svc.cluster.local:5672
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: attachment-storage-service
+  namespace: oih-staging-ns
+  labels: {}
+data:
+  LOG_LEVEL: trace
+  PORT: "3002"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: audit-log
+  namespace: oih-staging-ns
+  labels: {}
+data:
+  EXCHANGE_NAME: audit-logs
+  EXCHANGE_TOPIC: logs
+  INTROSPECT_ENDPOINT_BASIC: http://iam.oih-staging-ns.svc.cluster.local:3099/api/v1/tokens/introspect
+  INTROSPECT_TYPE: basic
+  QUEUE_URL: amqp://guest:guest@rabbitmq-service.oih-staging-ns.svc.cluster.local:5672
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: component-orchestrator
+  namespace: oih-staging-ns
+  labels: {}
+data:
+  ATTACHMENT_STORAGE_SERVICE_BASE_URL: http://attachment-storage-service.oih-staging-ns.svc.cluster.local:3002
+  COMPONENT_REPOSITORY_BASE_URL: http://component-repository-service.oih-staging-ns.svc.cluster.local:1234
+  INTROSPECT_ENDPOINT_BASIC: http://iam.oih-staging-ns.svc.cluster.local:3099/api/v1/tokens/introspect
+  LISTEN_PORT: "1234"
+  LOG_LEVEL: trace
+  RABBITMQ_MANAGEMENT_URI: http://guest:guest@rabbitmq-service.oih-dev-ns.svc.cluster.local:15672/
+  RABBITMQ_URI: amqp://guest:guest@rabbitmq-service.oih-dev-ns.svc.cluster.local
+  RABBITMQ_URI_FLOWS: amqp://rabbitmq-service.oih-dev-ns.svc.cluster.local
+  SECRET_SERVICE_URL: http://secret-service.oih-staging-ns.svc.cluster.local:3000/api/v1
+  SELF_URL: http://api-service.oih-staging-ns.svc.cluster.local
+  SNAPSHOTS_SERVICE_BASE_URL: http://snapshots-service.oih-staging-ns.svc.cluster.local:1234
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: component-repository
+  namespace: oih-staging-ns
+  labels: {}
+data:
+  CORS_ORIGIN_WHITELIST: localoih.com,http://web-ui.localoih.com,http://localhost:3000
+  INTROSPECT_ENDPOINT_BASIC: http://iam.oih-staging-ns.svc.cluster.local:3099/api/v1/tokens/introspect
+  LOG_LEVEL: trace
+  PORT: "1234"
+  RABBITMQ_URI: amqp://guest:guest@rabbitmq-service.oih-staging-ns.svc.cluster.local
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: data-hub
+  namespace: oih-staging-ns
+  labels: {}
+data:
+  LOG_LEVEL: trace
+  PORT: "1234"
+  RABBITMQ_URI: amqp://guest:guest@rabbitmq-service.oih-staging-ns.svc.cluster.local
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dispatcher-service
+  namespace: oih-staging-ns
+  labels: {}
+data:
+  FLOWREPO_URL: http://flow-repository.oih-staging-ns.svc.cluster.local:3001
+  INTROSPECT_ENDPOINT_BASIC: http://iam.oih-staging-ns.svc.cluster.local:3099/api/v1/tokens/introspect
+  INTROSPECT_TYPE: basic
+  QUEUE_URL: amqp://guest:guest@rabbitmq-service.oih-staging-ns.svc.cluster.local:5672
+  SDF_ID: 5d2484d2a422ca001bda5690
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: flow-repository
+  namespace: oih-staging-ns
+  labels: {}
+data:
+  INTROSPECT_ENDPOINT_BASIC: http://iam.oih-staging-ns.svc.cluster.local:3099/api/v1/tokens/introspect
+  INTROSPECT_TYPE: basic
+  NODE_ENV: production
+  ORIGINWHITELIST: localoih.com,http://web-ui.localoih.com,http://localhost:3000
+  QUEUE_URL: amqp://guest:guest@rabbitmq-service.oih-staging-ns.svc.cluster.local:5672
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logging-service
+  namespace: oih-staging-ns
+  labels: {}
+data:
+  GOOGLE_APPLICATION_CREDENTIALS: /usr/lib/app/credentials/credentials.json
+  LOG_LEVEL: trace
+  PORT: "1234"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: meta-data-repository
+  namespace: oih-staging-ns
+  labels: {}
+data:
+  API_BASE: /api/v1
+  BASE_URL: http://metadata.openintegrationhub.com
+  DEBUG_MODE: "false"
+  INTROSPECT_ENDPOINT_BASIC: http://iam.oih-staging-ns.svc.cluster.local:3099/api/v1/tokens/introspect
+  INTROSPECT_TYPE: basic
+  LOGGING_LEVEL: error
+  ORIGINWHITELIST: localoih.com,http://web-ui.localoih.com,http://localhost:3000
+  PORT: "3000"
+  RABBITMQ_URI: amqp://guest:guest@rabbitmq-service.oih-dev-ns.svc.cluster.local:5672
+  URLS_WITH_PORT: "false"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: reports-analytics
+  namespace: oih-staging-ns
+  labels: {}
+data:
+  GRAFANA_URL: https://grafana.openintegrationhub.com
+  INFLUXDB_DATABASE: statistics
+  INFLUX_HOST: influxdb.oih-staging-ns.svc.cluster.local
+  LOG_LEVEL: error
+  RABBITMQ_URI: amqp://guest:guest@rabbitmq-service.oih-staging-ns.svc.cluster.local:5672
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: scheduler
+  namespace: oih-staging-ns
+data:
+  LISTEN_PORT: "1234"
+  RABBITMQ_URI: amqp://guest:guest@rabbitmq-service.oih-dev-ns.svc.cluster.local
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: secret-service
+  namespace: oih-staging-ns
+  labels: {}
+data:
+  API_BASE: /api/v1
+  CRYPTO_DISABLED: "false"
+  DEBUG_MODE: "false"
+  INTROSPECT_ENDPOINT_BASIC: http://iam.oih-staging-ns.svc.cluster.local:3099/api/v1/tokens/introspect
+  INTROSPECT_TYPE: basic
+  LOG_LEVEL: error
+  ORIGINWHITELIST: localoih.com,http://web-ui.localoih.com,http://localhost:3000
+  PORT: "3000"
+  RABBITMQ_URI: amqp://guest:guest@rabbitmq-service.oih-staging-ns.svc.cluster.local:5672
+  TTL_AUTHFLOW: 2m
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: snapshots-service
+  namespace: oih-staging-ns
+  labels: {}
+data:
+  LOG_LEVEL: trace
+  PORT: "1234"
+  RABBITMQ_URI: amqp://guest:guest@rabbitmq-service.oih-staging-ns.svc.cluster.local
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: web-ui
+  namespace: oih-staging-ns
+data:
+  ENDPOINT_APP_DIRECTORY: https://app-directory.openintegrationhub.com/api/v1
+  ENDPOINT_COMPONENT: https://component-repository.openintegrationhub.com
+  ENDPOINT_DISPATCHER: https://dispatcher-service.openintegrationhub.com
+  ENDPOINT_FLOW: https://flow-repository.openintegrationhub.com
+  ENDPOINT_IAM: https://iam.openintegrationhub.com
+  ENDPOINT_METADATA: https://metadata.openintegrationhub.com/api/v1
+  ENDPOINT_SECRETS: https://skm.openintegrationhub.com/api/v1
+  ENDPOINT_WEBHOOKS: https://webhooks.openintegrationhub.com
+  PORT: "3000"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: webhooks
+  namespace: oih-staging-ns
+data:
+  CORS_ORIGIN_WHITELIST: https://web-ui.openintegrationhub.com
+  LISTEN_PORT: "1234"
+  LOG_LEVEL: trace
+  RABBITMQ_URI: amqp://guest:guest@rabbitmq-service.oih-dev-ns.svc.cluster.local
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-service
+  namespace: oih-staging-ns
+  labels:
+    app: api-service
+spec:
+  type: ClusterIP
+  selector:
+    app: component-orchestrator
+  ports:
+  - name: "1234"
+    protocol: TCP
+    port: 1234
+    targetPort: 1234
+  sessionAffinity: None
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-directory
+  namespace: oih-staging-ns
+  labels:
+    app: app-directory
+spec:
+  type: NodePort
+  selector:
+    app: app-directory
+  ports:
+  - protocol: TCP
+    port: 3000
+    targetPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: attachment-storage-service
+  namespace: oih-staging-ns
+  labels:
+    app: attachment-storage-service
+spec:
+  type: NodePort
+  selector:
+    app: attachment-storage-service
+  ports:
+  - name: "3002"
+    protocol: TCP
+    port: 3002
+    targetPort: 3002
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: audit-log
+  namespace: oih-staging-ns
+  labels:
+    app: audit-log
+spec:
+  type: NodePort
+  selector:
+    app: audit-log
+  ports:
+  - protocol: TCP
+    port: 3007
+    targetPort: 3007
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: component-repository-service
+  namespace: oih-staging-ns
+  labels:
+    app: component-repository-service
+spec:
+  type: NodePort
+  selector:
+    app: component-repository
+  ports:
+  - name: "1234"
+    protocol: TCP
+    port: 1234
+    targetPort: 1234
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: data-hub-service
+  namespace: oih-staging-ns
+  labels:
+    app: data-hub-service
+spec:
+  type: NodePort
+  selector:
+    app: data-hub
+  ports:
+  - name: "1234"
+    protocol: TCP
+    port: 1234
+    targetPort: 1234
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dispatcher-service
+  namespace: oih-staging-ns
+  labels:
+    app: dispatcher-service
+spec:
+  type: NodePort
+  selector:
+    app: dispatcher-service
+  ports:
+  - protocol: TCP
+    port: 3013
+    targetPort: 3013
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flow-repository
+  namespace: oih-staging-ns
+  labels:
+    app: flow-repository
+spec:
+  type: NodePort
+  selector:
+    app: flow-repository
+  ports:
+  - protocol: TCP
+    port: 3001
+    targetPort: 3001
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: oih-staging-ns
+  labels:
+    app: grafana
+spec:
+  type: NodePort
+  selector:
+    app: grafana
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ils
+  namespace: oih-staging-ns
+  labels:
+    app: ils
+spec:
+  type: NodePort
+  selector:
+    app: ils
+  ports:
+  - protocol: TCP
+    port: 3003
+    targetPort: 3003
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: influxdb
+  namespace: oih-staging-ns
+  labels:
+    app: influxdb
+spec:
+  type: NodePort
+  selector:
+    app: influxdb
+  ports:
+  - protocol: TCP
+    port: 8086
+    targetPort: 8086
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: logging-service
+  namespace: oih-staging-ns
+  labels:
+    app: logging-service
+spec:
+  type: NodePort
+  selector:
+    app: logging-service
+  ports:
+  - name: "1234"
+    protocol: TCP
+    port: 1234
+    targetPort: 1234
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: meta-data-repository
+  namespace: oih-staging-ns
+  labels:
+    app: meta-data-repository
+spec:
+  type: NodePort
+  selector:
+    app: meta-data-repository
+  ports:
+  - protocol: TCP
+    port: 3000
+    targetPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb-service
+  namespace: oih-staging-ns
+  labels:
+    app: mongodb-service
+spec:
+  type: NodePort
+  selector:
+    app: mongodb
+  ports:
+  - name: "27017"
+    protocol: TCP
+    port: 27017
+    targetPort: 27017
+  sessionAffinity: None
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq-service
+  namespace: oih-staging-ns
+  labels:
+    app: rabbitmq-service
+spec:
+  type: NodePort
+  selector:
+    app: rabbitmq
+  ports:
+  - name: "5672"
+    protocol: TCP
+    port: 5672
+    targetPort: 5672
+  - name: "15672"
+    protocol: TCP
+    port: 15672
+    targetPort: 15672
+  sessionAffinity: None
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: oih-staging-ns
+  labels:
+    app: redis
+spec:
+  type: NodePort
+  selector:
+    app: redis
+  ports:
+  - port: 6379
+    targetPort: 6379
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: reports-analytics
+  namespace: oih-staging-ns
+  labels:
+    app: reports-analytics
+spec:
+  type: NodePort
+  selector:
+    app: reports-analytics
+  ports:
+  - protocol: TCP
+    port: 3000
+    targetPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: secret-service
+  namespace: oih-staging-ns
+  labels:
+    app: secret-service
+spec:
+  type: NodePort
+  selector:
+    app: secret-service
+  ports:
+  - protocol: TCP
+    port: 3000
+    targetPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: snapshots-service
+  namespace: oih-staging-ns
+  labels:
+    app: snapshots-service
+spec:
+  type: NodePort
+  selector:
+    app: snapshots-service
+  ports:
+  - name: "1234"
+    protocol: TCP
+    port: 1234
+    targetPort: 1234
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-ui
+  namespace: oih-staging-ns
+  labels:
+    app: web-ui
+spec:
+  type: NodePort
+  selector:
+    app: web-ui
+  ports:
+  - protocol: TCP
+    port: 3000
+    targetPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webhooks-service
+  namespace: oih-staging-ns
+  labels:
+    app: webhooks-service
+spec:
+  type: NodePort
+  selector:
+    app: webhooks
+  ports:
+  - name: "1234"
+    protocol: TCP
+    port: 1234
+    targetPort: 1234
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: attachment-storage-service
+  namespace: oih-staging-ns
+  labels:
+    app: attachment-storage-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: attachment-storage-service
+  template:
+    metadata:
+      name: attachment-storage-service
+      labels:
+        app: attachment-storage-service
+    spec:
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      containers:
+      - name: attachment-storage-service
+        image: openintegrationhub/attachment-storage-service:latest
+        envFrom:
+        - configMapRef:
+            name: attachment-storage-service
+        env:
+        - name: REDIS_CONFIG
+          valueFrom:
+            secretKeyRef:
+              name: attachment-storage-service
+              key: REDIS_CONFIG
+        - name: IAM_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: attachment-storage-service
+              key: IAM_TOKEN
+        resources:
+          limits:
+            cpu: 0.1
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            port: 3002
+            path: /healthcheck
+        readinessProbe:
+          httpGet:
+            port: 3002
+            path: /healthcheck
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          privileged: false
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: audit-log
+  namespace: oih-staging-ns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: audit-log
+  template:
+    metadata:
+      labels:
+        app: audit-log
+    spec:
+      containers:
+      - name: audit-log
+        image: openintegrationhub/audit-log:latest
+        ports:
+        - containerPort: 3007
+        envFrom:
+        - configMapRef:
+            name: audit-log
+        env:
+        - name: MONGODB_URL
+          valueFrom:
+            secretKeyRef:
+              name: audit-log
+              key: mongourl
+        - name: IAM_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: audit-log
+              key: iamtoken
+        resources:
+          limits:
+            cpu: "0.1"
+            memory: 500Mi
+        livenessProbe:
+          httpGet:
+            port: 3007
+            path: /healthcheck
+          initialDelaySeconds: 120
+          timeoutSeconds: 1
+        readinessProbe:
+          httpGet:
+            port: 3007
+            path: /healthcheck
+          initialDelaySeconds: 10
+          timeoutSeconds: 1
+        imagePullPolicy: Always
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: component-orchestrator
+  namespace: oih-staging-ns
+  labels:
+    app: component-orchestrator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: component-orchestrator
+  template:
+    metadata:
+      name: component-orchestrator
+      labels:
+        app: component-orchestrator
+    spec:
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      serviceAccountName: component-orchestrator-account
+      containers:
+      - name: component-orchestrator
+        image: openintegrationhub/component-orchestrator:latest
+        envFrom:
+        - configMapRef:
+            name: component-orchestrator
+        env:
+        - name: IAM_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: component-orchestrator
+              key: IAM_TOKEN
+        - name: MONGODB_URI
+          valueFrom:
+            secretKeyRef:
+              name: component-orchestrator
+              key: MONGODB_URI
+        resources:
+          limits:
+            cpu: 0.1
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            port: 1234
+            path: /healthcheck
+        readinessProbe:
+          httpGet:
+            port: 1234
+            path: /healthcheck
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          privileged: false
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: component-repository
+  namespace: oih-staging-ns
+  labels:
+    app: component-repository
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: component-repository
+  template:
+    metadata:
+      name: component-repository
+      labels:
+        app: component-repository
+    spec:
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      containers:
+      - name: component-repository
+        image: openintegrationhub/component-repository:latest
+        envFrom:
+        - configMapRef:
+            name: component-repository
+        env:
+        - name: MONGODB_URI
+          valueFrom:
+            secretKeyRef:
+              name: component-repository
+              key: MONGODB_URI
+        - name: IAM_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: component-repository
+              key: IAM_TOKEN
+        resources:
+          limits:
+            cpu: 0.1
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            port: 1234
+            path: /healthcheck
+        readinessProbe:
+          httpGet:
+            port: 1234
+            path: /healthcheck
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          privileged: false
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-hub
+  namespace: oih-staging-ns
+  labels:
+    app: data-hub
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: data-hub
+  template:
+    metadata:
+      name: data-hub
+      labels:
+        app: data-hub
+    spec:
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      containers:
+      - name: data-hub
+        image: openintegrationhub/data-hub:latest
+        envFrom:
+        - configMapRef:
+            name: data-hub
+        env:
+        - name: MONGODB_URI
+          valueFrom:
+            secretKeyRef:
+              name: data-hub
+              key: MONGODB_URI
+        - name: RABBITMQ_URI
+          valueFrom:
+            secretKeyRef:
+              name: data-hub
+              key: RABBITMQ_URI
+        - name: IAM_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: data-hub
+              key: IAM_TOKEN
+        resources:
+          limits:
+            cpu: 0.1
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            port: 1234
+            path: /healthcheck
+        readinessProbe:
+          httpGet:
+            port: 1234
+            path: /healthcheck
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          privileged: false
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dispatcher-service
+  namespace: oih-staging-ns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dispatcher-service
+  template:
+    metadata:
+      labels:
+        app: dispatcher-service
+    spec:
+      containers:
+      - name: dispatcher-service
+        image: openintegrationhub/dispatcher-service:latest
+        ports:
+        - containerPort: 3013
+        envFrom:
+        - configMapRef:
+            name: dispatcher-service
+        env:
+        - name: MONGODB_URL
+          valueFrom:
+            secretKeyRef:
+              name: dispatcher-service
+              key: mongourl
+        - name: IAM_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: dispatcher-service
+              key: iamtoken
+        - name: FLOW_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: dispatcher-service
+              key: flowtoken
+        resources:
+          limits:
+            cpu: "0.1"
+            memory: 1000Mi
+        livenessProbe:
+          httpGet:
+            port: 3013
+            path: /healthcheck
+          initialDelaySeconds: 120
+          timeoutSeconds: 1
+        readinessProbe:
+          httpGet:
+            port: 3013
+            path: /healthcheck
+          initialDelaySeconds: 10
+          timeoutSeconds: 1
+        imagePullPolicy: Always
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flow-repository
+  namespace: oih-staging-ns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flow-repository
+  template:
+    metadata:
+      labels:
+        app: flow-repository
+    spec:
+      containers:
+      - name: flow-repository
+        image: openintegrationhub/flow-repository:latest
+        ports:
+        - containerPort: 3001
+        envFrom:
+        - configMapRef:
+            name: flow-repository
+        env:
+        - name: MONGODB_URL
+          valueFrom:
+            secretKeyRef:
+              name: flow-repository
+              key: mongourl
+        - name: IAM_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: flow-repository
+              key: iamtoken
+        resources:
+          limits:
+            cpu: "0.1"
+            memory: 500Mi
+        livenessProbe:
+          httpGet:
+            port: 3001
+            path: /healthcheck
+          initialDelaySeconds: 120
+          timeoutSeconds: 1
+        readinessProbe:
+          httpGet:
+            port: 3001
+            path: /healthcheck
+          initialDelaySeconds: 10
+          timeoutSeconds: 1
+        imagePullPolicy: Always
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: oih-staging-ns
+  labels:
+    app: grafana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+      - name: master
+        image: grafana/grafana:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: GF_LOG_LEVEL
+          value: error
+        - name: GF_INSTALL_PLUGINS
+          value: grafana-clock-panel,briangann-gauge-panel,natel-plotly-panel,grafana-simple-json-datasource
+        volumeMounts:
+        - name: grafana-pdisk
+          mountPath: /var/lib/grafana
+        livenessProbe:
+          httpGet:
+            port: 3000
+            path: /robots.txt
+          initialDelaySeconds: 120
+          timeoutSeconds: 1
+        readinessProbe:
+          httpGet:
+            port: 3000
+            path: /robots.txt
+          initialDelaySeconds: 30
+          timeoutSeconds: 1
+      volumes:
+      - name: grafana-pdisk
+        gcePersistentDisk:
+          fsType: ext4
+          pdName: timeseries-grafana
+      securityContext:
+        fsGroup: 472
+        runAsUser: 472
+  minReadySeconds: 10
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ils
+  namespace: oih-staging-ns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ils
+  template:
+    metadata:
+      labels:
+        app: ils
+    spec:
+      containers:
+      - name: ils
+        image: openintegrationhub/ils:latest
+        ports:
+        - containerPort: 3003
+        env:
+        - name: MONGODB_URL
+          valueFrom:
+            secretKeyRef:
+              name: ils
+              key: mongourl
+        - name: SCHEMA_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: ils
+              key: iamtoken
+        resources:
+          limits:
+            cpu: "0.1"
+            memory: 500Mi
+        livenessProbe:
+          httpGet:
+            port: 3003
+            path: /healthcheck
+          initialDelaySeconds: 120
+          timeoutSeconds: 1
+        readinessProbe:
+          httpGet:
+            port: 3003
+            path: /healthcheck
+          initialDelaySeconds: 10
+          timeoutSeconds: 1
+        imagePullPolicy: Always
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: influxdb
+  namespace: oih-staging-ns
+  labels:
+    app: influxdb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: influxdb
+  template:
+    metadata:
+      labels:
+        app: influxdb
+    spec:
+      containers:
+      - name: influx-db
+        image: influxdb:latest
+        ports:
+        - containerPort: 8086
+        env:
+        - name: INFLUXDB_LOGGING_LEVEL
+          value: error
+        - name: INFLUXDB_REPORTING_DISABLED
+          value: "true"
+        - name: INFLUXDB_DATA_QUERY_LOG_ENABLED
+          value: "false"
+        - name: INFLUXDB_DATA_TRACE_LOGGING_ENABLED
+          value: "false"
+        - name: INFLUXDB_HTTP_LOG_ENABLED
+          value: "false"
+        - name: INFLUXDB_CONTINUOUS_QUERIES_LOG_ENABLED
+          value: "false"
+        - name: INFLUXDB_DATA_ENGINE
+          value: tsm1
+        volumeMounts:
+        - name: influx-pdisk
+          mountPath: /var/lib/influxdb
+        livenessProbe:
+          httpGet:
+            port: 8086
+            path: /ping
+          initialDelaySeconds: 120
+          timeoutSeconds: 1
+        readinessProbe:
+          httpGet:
+            port: 8086
+            path: /ping
+          initialDelaySeconds: 10
+          timeoutSeconds: 1
+      volumes:
+      - name: influx-pdisk
+        gcePersistentDisk:
+          fsType: ext4
+          pdName: timeseries-influx
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: logging-service
+  namespace: oih-staging-ns
+  labels:
+    app: logging-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: logging-service
+  template:
+    metadata:
+      name: logging-service
+      labels:
+        app: logging-service
+    spec:
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      containers:
+      - name: logging-service
+        image: openintegrationhub/logging-service:latest
+        envFrom:
+        - configMapRef:
+            name: logging-service
+        env:
+        - name: IAM_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: logging-service
+              key: IAM_TOKEN
+        resources:
+          limits:
+            cpu: 0.1
+            memory: 512Mi
+        volumeMounts:
+        - name: credentials
+          mountPath: /usr/lib/app/credentials
+        livenessProbe:
+          httpGet:
+            port: 1234
+            path: /healthcheck
+        readinessProbe:
+          httpGet:
+            port: 1234
+            path: /healthcheck
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          privileged: false
+      volumes:
+      - name: credentials
+        secret:
+          items:
+          - key: GCLOUD_CREDENTIALS
+            path: credentials.json
+          secretName: logging-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb
+  namespace: oih-staging-ns
+  labels:
+    app: mongodb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      name: mongodb
+      labels:
+        app: mongodb
+    spec:
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      containers:
+      - name: mongodb
+        image: mongo
+        livenessProbe:
+          tcpSocket:
+            port: 27017
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        imagePullPolicy: Always
+        securityContext:
+          privileged: false
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq
+  namespace: oih-staging-ns
+  labels:
+    app: rabbitmq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      name: rabbitmq
+      labels:
+        app: rabbitmq
+    spec:
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      containers:
+      - name: rabbitmq
+        image: rabbitmq:management
+        envFrom: []
+        livenessProbe:
+          tcpSocket:
+            port: 5672
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        imagePullPolicy: Always
+        securityContext:
+          privileged: false
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: oih-staging-ns
+  labels:
+    app: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: master
+        image: redis
+        ports:
+        - containerPort: 6379
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scheduler
+  namespace: oih-staging-ns
+  labels:
+    app: scheduler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: scheduler
+  template:
+    metadata:
+      name: scheduler
+      labels:
+        app: scheduler
+    spec:
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      containers:
+      - name: scheduler
+        image: openintegrationhub/scheduler:latest
+        envFrom:
+        - configMapRef:
+            name: scheduler
+        env:
+        - name: MONGODB_URI
+          valueFrom:
+            secretKeyRef:
+              name: scheduler
+              key: MONGODB_URI
+        resources:
+          limits:
+            cpu: 0.1
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            port: 1234
+            path: /healthcheck
+        readinessProbe:
+          httpGet:
+            port: 1234
+            path: /healthcheck
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          privileged: false
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: snapshots-service
+  namespace: oih-staging-ns
+  labels:
+    app: snapshots-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: snapshots-service
+  template:
+    metadata:
+      name: snapshots-service
+      labels:
+        app: snapshots-service
+    spec:
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      containers:
+      - name: snapshots-service
+        image: openintegrationhub/snapshots-service:latest
+        envFrom:
+        - configMapRef:
+            name: snapshots-service
+        env:
+        - name: MONGODB_URI
+          valueFrom:
+            secretKeyRef:
+              name: snapshots-service
+              key: MONGODB_URI
+        - name: RABBITMQ_URI
+          valueFrom:
+            secretKeyRef:
+              name: snapshots-service
+              key: RABBITMQ_URI
+        - name: IAM_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: snapshots-service
+              key: IAM_TOKEN
+        resources:
+          limits:
+            cpu: 0.1
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            port: 1234
+            path: /healthcheck
+        readinessProbe:
+          httpGet:
+            port: 1234
+            path: /healthcheck
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          privileged: false
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webhooks
+  namespace: oih-staging-ns
+  labels:
+    app: webhooks
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webhooks
+  template:
+    metadata:
+      name: webhooks
+      labels:
+        app: webhooks
+    spec:
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      serviceAccountName: component-orchestrator-account
+      containers:
+      - name: webhooks
+        image: openintegrationhub/webhooks:latest
+        envFrom:
+        - configMapRef:
+            name: webhooks
+        env:
+        - name: MONGODB_URI
+          valueFrom:
+            secretKeyRef:
+              name: webhooks
+              key: MONGODB_URI
+        resources:
+          limits:
+            cpu: 0.1
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            port: 1234
+            path: /healthcheck
+        readinessProbe:
+          httpGet:
+            port: 1234
+            path: /healthcheck
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          privileged: false
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: app-directory
+  namespace: oih-staging-ns
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: app-directory
+    spec:
+      containers:
+      - name: app-directory
+        image: openintegrationhub/app-directory:latest
+        ports:
+        - containerPort: 3000
+        envFrom:
+        - configMapRef:
+            name: app-directory
+        env:
+        - name: IAM_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: app-directory
+              key: iamtoken
+        - name: MONGODB_CONNECTION
+          valueFrom:
+            secretKeyRef:
+              name: app-directory
+              key: mongourl
+        livenessProbe:
+          httpGet:
+            port: 3000
+            path: /healthcheck
+          initialDelaySeconds: 120
+          timeoutSeconds: 1
+        readinessProbe:
+          httpGet:
+            port: 3000
+            path: /healthcheck
+          initialDelaySeconds: 10
+          timeoutSeconds: 1
+  minReadySeconds: 10
+  revisionHistoryLimit: 2
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: meta-data-repository
+  namespace: oih-staging-ns
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: meta-data-repository
+    spec:
+      containers:
+      - name: meta-data-repository
+        image: openintegrationhub/meta-data-repository:latest
+        ports:
+        - containerPort: 3000
+        envFrom:
+        - configMapRef:
+            name: meta-data-repository
+        env:
+        - name: IAM_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: meta-data-repository
+              key: iamtoken
+        - name: MONGODB_CONNECTION
+          valueFrom:
+            secretKeyRef:
+              name: meta-data-repository
+              key: mongourl
+        resources:
+          limits:
+            cpu: "0.1"
+            memory: 500Mi
+        livenessProbe:
+          httpGet:
+            port: 3000
+            path: /healthcheck
+          initialDelaySeconds: 120
+          timeoutSeconds: 1
+        readinessProbe:
+          httpGet:
+            port: 3000
+            path: /healthcheck
+          initialDelaySeconds: 10
+          timeoutSeconds: 1
+  minReadySeconds: 10
+  revisionHistoryLimit: 2
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: reports-analytics
+  namespace: oih-staging-ns
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: reports-analytics
+    spec:
+      containers:
+      - name: reports-analytics
+        image: openintegrationhub/reports-analytics:latest
+        ports:
+        - containerPort: 3000
+        envFrom:
+        - configMapRef:
+            name: reports-analytics
+        env:
+        - name: GRAFANA_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: reports-analytics
+              key: grafanatoken
+        - name: IAM_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: reports-analytics
+              key: iamtoken
+        - name: MONGODB_CONNECTION
+          valueFrom:
+            secretKeyRef:
+              name: reports-analytics
+              key: mongourl
+        livenessProbe:
+          httpGet:
+            port: 3000
+            path: /healthcheck
+          initialDelaySeconds: 120
+          timeoutSeconds: 1
+        readinessProbe:
+          httpGet:
+            port: 3000
+            path: /healthcheck
+          initialDelaySeconds: 10
+          timeoutSeconds: 1
+  minReadySeconds: 10
+  revisionHistoryLimit: 2
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: secret-service
+  namespace: oih-staging-ns
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: secret-service
+    spec:
+      containers:
+      - name: secret-service
+        image: openintegrationhub/secret-service:latest
+        ports:
+        - containerPort: 3000
+        envFrom:
+        - configMapRef:
+            name: secret-service
+        env:
+        - name: IAM_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: secret-service
+              key: iamtoken
+        - name: MONGODB_CONNECTION
+          valueFrom:
+            secretKeyRef:
+              name: secret-service
+              key: mongourl
+        - name: CRYPTO_KEY
+          valueFrom:
+            secretKeyRef:
+              name: secret-service
+              key: crypto_key
+        resources:
+          limits:
+            cpu: "0.1"
+            memory: 1000Mi
+        livenessProbe:
+          httpGet:
+            port: 3000
+            path: /healthcheck
+          initialDelaySeconds: 120
+          timeoutSeconds: 1
+        readinessProbe:
+          httpGet:
+            port: 3000
+            path: /healthcheck
+          initialDelaySeconds: 10
+          timeoutSeconds: 1
+  minReadySeconds: 10
+  revisionHistoryLimit: 2
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: web-ui
+  namespace: oih-staging-ns
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: web-ui
+    spec:
+      containers:
+      - name: web-ui
+        image: openintegrationhub/web-ui:latest
+        ports:
+        - containerPort: 3000
+        envFrom:
+        - configMapRef:
+            name: web-ui
+        env: []
+        resources:
+          limits:
+            cpu: "0.1"
+            memory: 500Mi
+        livenessProbe:
+          httpGet:
+            port: 3000
+            path: /healthcheck
+          initialDelaySeconds: 120
+          timeoutSeconds: 1
+        readinessProbe:
+          httpGet:
+            port: 3000
+            path: /healthcheck
+          initialDelaySeconds: 10
+          timeoutSeconds: 1
+  minReadySeconds: 10
+  revisionHistoryLimit: 2
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: oih-dev-ingress
+  namespace: oih-staging-ns
+  annotations:
+    kubernetes.io/ingress.class: gce
+    kubernetes.io/ingress.global-static-ip-name: oih-dev-ingress
+spec:
+  rules:
+  - host: iam.openintegrationhub.com
+    http:
+      paths:
+      - backend:
+          serviceName: iam
+          servicePort: 3099
+  - host: skm.openintegrationhub.com
+    http:
+      paths:
+      - backend:
+          serviceName: secret-service
+          servicePort: 3000
+  - host: flow-repository.openintegrationhub.com
+    http:
+      paths:
+      - backend:
+          serviceName: flow-repository
+          servicePort: 3001
+  - host: auditlog.openintegrationhub.com
+    http:
+      paths:
+      - backend:
+          serviceName: audit-log
+          servicePort: 3007
+  - host: metadata.openintegrationhub.com
+    http:
+      paths:
+      - backend:
+          serviceName: meta-data-repository
+          servicePort: 3000
+  - host: component-repository.openintegrationhub.com
+    http:
+      paths:
+      - backend:
+          serviceName: component-repository-service
+          servicePort: 1234
+  - host: webhooks.openintegrationhub.com
+    http:
+      paths:
+      - backend:
+          serviceName: webhooks-service
+          servicePort: 1234
+  - host: web-ui.openintegrationhub.com
+    http:
+      paths:
+      - backend:
+          serviceName: web-ui
+          servicePort: 3000
+  - host: attachment-storage-service.openintegrationhub.com
+    http:
+      paths:
+      - backend:
+          serviceName: attachment-storage-service
+          servicePort: 3002
+  - host: data-hub.openintegrationhub.com
+    http:
+      paths:
+      - backend:
+          serviceName: data-hub-service
+          servicePort: 1234
+  - host: ils.openintegrationhub.com
+    http:
+      paths:
+      - backend:
+          serviceName: ils
+          servicePort: 3003
+  - host: dispatcher-service.openintegrationhub.com
+    http:
+      paths:
+      - backend:
+          serviceName: dispatcher-service
+          servicePort: 3013
+  - host: app-directory.openintegrationhub.com
+    http:
+      paths:
+      - backend:
+          serviceName: app-directory
+          servicePort: 3000
+  - host: grafana.openintegrationhub.com
+    http:
+      paths:
+      - backend:
+          serviceName: grafana
+          servicePort: 80
+  - host: reports-analytics.openintegrationhub.com
+    http:
+      paths:
+      - backend:
+          serviceName: reports-analytics
+          servicePort: 3000
