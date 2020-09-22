@@ -1,0 +1,21 @@
+namespace: oih-staging-ns
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- ../../platform
+- ../../config
+- ../../services
+configMapGenerator:
+- {name: flow-repository, namespace: oih-dev-ns, behavior: merge, envs: [config/flow-repository.configmap]}
+- {name: audit-log, namespace: oih-dev-ns, behavior: merge, envs: [config/audit-log.configmap]}
+- {name: meta-data-repository, namespace: oih-dev-ns, behavior: merge, envs: [config/meta-data-repository.configmap]}
+- {name: attachment-storage-service, namespace: oih-dev-ns, behavior: merge, envs: [
+    config/attachment-storage-service.configmap]}
+- {name: logging-service, namespace: oih-dev-ns, behavior: merge, envs: [config/logging-service.configmap]}
+- {name: data-hub, namespace: oih-dev-ns, behavior: merge, envs: [config/data-hub.configmap]}
+- {name: dispatcher-service, namespace: oih-dev-ns, behavior: merge, envs: [config/dispatcher-service.configmap]}
+- {name: component-repository, namespace: oih-dev-ns, behavior: merge, envs: [config/component-repository.configmap]}
+- {name: snapshots-service, namespace: oih-dev-ns, behavior: merge, envs: [config/snapshots-service.configmap]}
+- {name: secret-service, namespace: oih-dev-ns, behavior: merge, envs: [config/secret-service.configmap]}
+- {name: component-orchestrator, namespace: oih-dev-ns, behavior: merge, envs: [config/component-orchestrator.configmap]}
+- {name: reports-analytics, namespace: oih-dev-ns, behavior: merge, envs: [config/reports-analytics.configmap]}

@@ -1,0 +1,2 @@
+GOOGLE_APPLICATION_CREDENTIALS=/usr/lib/app/credentials/credentials.json
+PORT=1234
